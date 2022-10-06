@@ -16,16 +16,16 @@ from netket.vqs import MCState
 
 @partial(jax.vmap, in_axes=(None, None, None, 0), out_axes=0)
 def local_value_kernel(
-    Ô: AbstractOperator, logpsi: Callable, pars: PyTree, σ: Array
+    H: AbstractOperator, logpsi: Callable, pars: PyTree, σ: Array
 ) -> Array:
-    σp, mels = Ô.get_conn_padded(σ)
+    σp, mels = H.get_conn_padded(σ)
     return jnp.sum(mels * jnp.exp(logpsi(pars, σp) - logpsi(pars, σ)))
 
 
 class MCStateSimple(MCState):
-    def expect(self, Ô: AbstractOperator) -> Stats:
+    def expect(self, H: AbstractOperator) -> Stats:
         return _expect(
-            Ô,
+            H,
             local_value_kernel,
             self._apply_fun,
             self.chunk_size,
@@ -35,16 +35,16 @@ class MCStateSimple(MCState):
             self.samples,
         )
 
-    # Assuming Ô is Hermitian and use_covariance == True
+    # Assuming H is Hermitian and use_covariance == True
     def expect_and_grad(
         self,
-        Ô: AbstractOperator,
+        H: AbstractOperator,
         *,
         mutable: CollectionFilter = False,
         use_covariance: Optional[bool] = None
     ) -> Tuple[Stats, PyTree]:
-        Ō, Ō_grad, new_model_state = _expect_and_grad(
-            Ô,
+        O_stat, O_grad, new_model_state = _expect_and_grad(
+            H,
             local_value_kernel,
             self._apply_fun,
             mutable,
@@ -58,12 +58,12 @@ class MCStateSimple(MCState):
         if mutable is not False:
             self.model_state = new_model_state
 
-        return Ō, Ō_grad
+        return O_stat, O_grad
 
 
 @partial(jax.jit, static_argnums=(0, 1, 2, 3))
 def _expect(
-    Ô: AbstractOperator,
+    H: AbstractOperator,
     local_value_kernel: Callable,
     model_apply_fun: Callable,
     chunk_size: int,
@@ -76,7 +76,7 @@ def _expect(
     σ = σ.reshape((n_chains_per_rank * n_batches, hilbert_size))
 
     _local_value_kernel = partial(
-        local_value_kernel, Ô, model_apply_fun, {"params": parameters, **model_state}
+        local_value_kernel, H, model_apply_fun, {"params": parameters, **model_state}
     )
     if chunk_size:
         _local_value_kernel = nkjax.apply_chunked(
@@ -84,13 +84,13 @@ def _expect(
         )
     O_loc = _local_value_kernel(σ)
 
-    Ō = statistics(O_loc.reshape((n_chains_per_rank, n_batches)).T)
-    return Ō
+    O_stat = statistics(O_loc.reshape((n_chains_per_rank, n_batches)).T)
+    return O_stat
 
 
 @partial(jax.jit, static_argnums=(0, 1, 2, 3, 4))
 def _expect_and_grad(
-    Ô: AbstractOperator,
+    H: AbstractOperator,
     local_value_kernel: Callable,
     model_apply_fun: Callable,
     mutable: CollectionFilter,
@@ -99,13 +99,13 @@ def _expect_and_grad(
     parameters: PyTree,
     model_state: PyTree,
     σ: Array,
-) -> Tuple[Stats, PyTree]:
+) -> Tuple[Stats, PyTree, PyTree]:
     n_chains_per_rank, n_batches, hilbert_size = σ.shape
     σ = σ.reshape((n_chains_per_rank * n_batches, hilbert_size))
     n_samples = σ.shape[0] * mpi.n_nodes
 
     _local_value_kernel = partial(
-        local_value_kernel, Ô, model_apply_fun, {"params": parameters, **model_state}
+        local_value_kernel, H, model_apply_fun, {"params": parameters, **model_state}
     )
     if chunk_size:
         _local_value_kernel = nkjax.apply_chunked(
@@ -113,9 +113,9 @@ def _expect_and_grad(
         )
     O_loc = _local_value_kernel(σ)
 
-    Ō = statistics(O_loc.reshape((n_chains_per_rank, n_batches)).T)
+    O_stat = statistics(O_loc.reshape((n_chains_per_rank, n_batches)).T)
 
-    O_loc -= Ō.mean
+    O_loc -= O_stat.mean
 
     is_mutable = mutable is not False
     _, vjp_fun, *new_model_state = nkjax.vjp(
@@ -124,16 +124,16 @@ def _expect_and_grad(
         conjugate=True,
         has_aux=is_mutable,
     )
-    Ō_grad = vjp_fun(jnp.conjugate(O_loc) / n_samples)[0]
-    Ō_grad = jax.tree_map(lambda x: mpi.mpi_sum_jax(x)[0], Ō_grad)
-    Ō_grad = jax.tree_map(
+    O_grad = vjp_fun(jnp.conjugate(O_loc) / n_samples)[0]
+    O_grad = jax.tree_map(lambda x: mpi.mpi_sum_jax(x)[0], O_grad)
+    O_grad = jax.tree_map(
         lambda x, target: (x if jnp.iscomplexobj(target) else 2 * x.real).astype(
             target.dtype
         ),
-        Ō_grad,
+        O_grad,
         parameters,
     )
 
     new_model_state = new_model_state[0] if is_mutable else None
 
-    return Ō, Ō_grad, new_model_state
+    return O_stat, O_grad, new_model_state
