@@ -49,8 +49,9 @@ class VMCSRTry(nk.VMC):
         self._lr_multipliers = [1, self.lr_decay, self.lr_grow]
         assert len(self._lr_multipliers) == self.n_trials
 
+        # TODO: Use output dtype
         self._losses = [
-            np.empty(self.try_steps, dtype=dtype_real(self.state.model.dtype))
+            np.empty(self.try_steps, dtype=dtype_real(self.state.model.param_dtype))
             for _ in range(self.n_trials)
         ]
         self._trial_variables = [None for _ in range(self.n_trials)]
