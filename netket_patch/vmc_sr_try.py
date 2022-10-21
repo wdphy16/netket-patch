@@ -40,7 +40,7 @@ class VMCSRTry(nk.VMC):
         assert state is not None
         assert self.lr_min <= state.lr <= self.lr_max
         self._lr_init = state.lr
-        self._diag_shift_init = self.diag_shift
+        self._rel_ds_init = self.diag_shift / state.lr
 
         self._last_variables = self.state.variables
         self._last_optimizer_state = self._optimizer_state
@@ -65,15 +65,17 @@ class VMCSRTry(nk.VMC):
         while self._step_count < init_step_count + n_steps:
             if self._step_count % (epoch_steps * self.restart_epochs) == 0:
                 self._last_lr = self._lr_init
-                self._last_diag_shift = self._diag_shift_init
+                self._last_rel_ds = self._rel_ds_init
 
             if 0 <= self._stage < self.n_trials:
                 self.state.variables = self._last_variables
+                lr_multiplier = self._lr_multipliers[self._stage]
                 self._optimizer_state = replace_attr(
                     self._last_optimizer_state,
                     AdjustableLRState,
-                    {"lr": self._lr_multipliers[self._stage] * self._last_lr},
+                    {"lr": lr_multiplier * self._last_lr},
                 )
+                self.diag_shift = self._last_rel_ds * lr_multiplier * self._last_lr
 
                 for buffer_idx in range(self.try_steps):
                     self._forward_and_backward()
@@ -106,7 +108,9 @@ class VMCSRTry(nk.VMC):
 
                 self.state.variables = self._last_variables
                 self._optimizer_state = self._trial_optimizer_states[0]
-                self.diag_shift = self._lr_multipliers[idx] * self._last_diag_shift
+                self.diag_shift = (
+                    self._lr_multipliers[idx] * self._last_rel_ds * self._last_lr
+                )
 
                 for buffer_idx in range(self.try_steps):
                     self._forward_and_backward()
@@ -128,10 +132,11 @@ class VMCSRTry(nk.VMC):
                 self.state.variables = self._trial_variables[idx]
                 self._optimizer_state = self._trial_optimizer_states[idx]
 
-                self.diag_shift = self._lr_multipliers[idx] * self._last_diag_shift
-                self._last_diag_shift = min(
-                    max(self.diag_shift, self.lr_min / self.lr_decay),
-                    self.lr_max / self.lr_grow,
+                rel_ds = self._lr_multipliers[idx] * self._last_rel_ds
+                self.diag_shift = rel_ds * self._last_lr
+                self._last_rel_ds = min(
+                    max(rel_ds, self.lr_min / self.lr_decay),
+                    1 / self.lr_min / self.lr_grow,
                 )
 
                 for _ in range(self.run_steps):
