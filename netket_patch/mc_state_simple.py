@@ -1,4 +1,5 @@
 # TODO: machine_pow is not used?
+# TODO: MPI
 
 from functools import partial
 from typing import Callable, Optional, Tuple
@@ -65,7 +66,7 @@ class MCStateSimple(MCState):
 def _expect(
     H: AbstractOperator,
     local_value_kernel: Callable,
-    model_apply_fun: Callable,
+    apply_fun: Callable,
     chunk_size: int,
     machine_pow: int,
     parameters: PyTree,
@@ -76,7 +77,7 @@ def _expect(
     σ = σ.reshape((n_chains_per_rank * n_batches, hilbert_size))
 
     _local_value_kernel = partial(
-        local_value_kernel, H, model_apply_fun, {"params": parameters, **model_state}
+        local_value_kernel, H, apply_fun, {"params": parameters, **model_state}
     )
     if chunk_size:
         _local_value_kernel = nkjax.apply_chunked(
@@ -92,7 +93,7 @@ def _expect(
 def _expect_and_grad(
     H: AbstractOperator,
     local_value_kernel: Callable,
-    model_apply_fun: Callable,
+    apply_fun: Callable,
     mutable: CollectionFilter,
     chunk_size: int,
     machine_pow: int,
@@ -102,10 +103,9 @@ def _expect_and_grad(
 ) -> Tuple[Stats, PyTree, PyTree]:
     n_chains_per_rank, n_batches, hilbert_size = σ.shape
     σ = σ.reshape((n_chains_per_rank * n_batches, hilbert_size))
-    n_samples = σ.shape[0] * mpi.n_nodes
 
     _local_value_kernel = partial(
-        local_value_kernel, H, model_apply_fun, {"params": parameters, **model_state}
+        local_value_kernel, H, apply_fun, {"params": parameters, **model_state}
     )
     if chunk_size:
         _local_value_kernel = nkjax.apply_chunked(
@@ -116,10 +116,10 @@ def _expect_and_grad(
     O_stat = statistics(O_loc.reshape((n_chains_per_rank, n_batches)).T)
 
     O_loc -= O_stat.mean
-
+    n_samples = σ.shape[0] * mpi.n_nodes
     is_mutable = mutable is not False
     _, vjp_fun, *new_model_state = nkjax.vjp(
-        lambda w: model_apply_fun({"params": w, **model_state}, σ, mutable=mutable),
+        lambda w: apply_fun({"params": w, **model_state}, σ, mutable=mutable),
         parameters,
         conjugate=True,
         has_aux=is_mutable,
