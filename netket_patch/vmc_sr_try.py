@@ -152,6 +152,9 @@ class VMCSRTry(nk.VMC):
     def _forward_and_backward(self):
         self.state.reset()
 
+        if hasattr(self.state, "diag_shift"):
+            self.state.diag_shift = self.diag_shift
+
         # Compute the local energy estimator and average Energy
         self._loss_stats, self._loss_grad = self.state.expect_and_grad(self._ham)
 
