@@ -2,6 +2,7 @@ from functools import partial, wraps
 
 import jax
 from jax import numpy as jnp
+from jax import random
 from netket.operator._ising import Ising, _ising_conn_states_jax
 
 
@@ -57,3 +58,9 @@ class IsingDisorderJax(Ising):
         return _ising_kernel_jax(
             x, self._edges_jax, self._flip, self.h, self.J, self._hi_local_states
         )
+
+    def sample_disorder(self, key):
+        self._h = random.bernoulli(key, shape=(self.hilbert.size,)) * 2 - 1
+
+    def get_disorder(self):
+        return self._h

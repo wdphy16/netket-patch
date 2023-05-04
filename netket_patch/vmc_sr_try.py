@@ -1,7 +1,5 @@
 import netket as nk
 import numpy as np
-from jax import numpy as jnp
-from jax.tree_util import tree_map
 from netket.jax import dtype_real
 from optax_patch import AdjustableLRState, get_slope_t_stat
 
@@ -150,24 +148,7 @@ class VMCSRTry(nk.VMC):
                 raise ValueError(f"Unknown stage: {self._stage}")
 
     def _forward_and_backward(self):
-        self.state.reset()
-
         if hasattr(self.state, "diag_shift"):
             self.state.diag_shift = self.diag_shift
 
-        # Compute the local energy estimator and average Energy
-        self._loss_stats, self._loss_grad = self.state.expect_and_grad(self._ham)
-
-        # if it's the identity it does
-        # self._updates = self._loss_grad
-        self._updates = self.preconditioner(
-            self.state, self._loss_grad, self.diag_shift
-        )
-
-        # If parameters are real, then take only real part of the gradient
-        # (if it's complex)
-        self._updates = tree_map(
-            lambda x, target: (x if jnp.iscomplexobj(target) else x.real),
-            self._updates,
-            self.state.parameters,
-        )
+        super()._forward_and_backward()
