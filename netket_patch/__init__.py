@@ -1,6 +1,7 @@
 from .auto_chunk import AutoChunk
 from .callbacks import build_check_finite_callback
 from .exact_state_simple import ExactStateSimple
+from .ising_disorder_jax import IsingDisorderJax
 from .json_log_ema import JsonLogEMA, log_ema_callback
 from .mc_state_min_sr import MCStateMinSR
 from .mc_state_simple import MCStateSimple
