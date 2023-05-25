@@ -11,10 +11,10 @@ from netket import jax as nkjax
 from netket.operator import AbstractOperator
 from netket.stats import Stats
 from netket.utils.types import Array, PyTree
-from netket.vqs import ExactState
+from netket.vqs import FullSumState
 
 
-class ExactStateSimple(ExactState):
+class FullSumStateSimple(FullSumState):
     def expect(self, H: AbstractOperator) -> Stats:
         return _expect(
             H,
