@@ -3,7 +3,8 @@ from functools import partial, wraps
 import jax
 from jax import numpy as jnp
 from jax import random
-from netket.operator._ising import Ising, _ising_conn_states_jax
+from netket.operator._ising.jax import _ising_conn_states_jax
+from netket.operator._ising.numba import Ising
 
 
 @partial(jax.vmap, in_axes=(0, None, None, None))
