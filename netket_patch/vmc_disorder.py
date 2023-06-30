@@ -1,5 +1,6 @@
 import netket as nk
 from jax import random
+from netket import jax as nkjax
 
 
 class VMCDisorder(nk.VMC):
@@ -8,7 +9,7 @@ class VMCDisorder(nk.VMC):
             ham_seed = kwargs.pop("ham_seed")
         else:
             ham_seed = None
-        self.key_ham = nk.jax.PRNGKey(ham_seed)
+        self.key_ham = nkjax.PRNGKey(ham_seed)
 
         super().__init__(*args, **kwargs)
 

@@ -13,37 +13,20 @@ from netket.stats import Stats, statistics
 from netket.utils import mpi
 from netket.utils.types import Array, PyTree
 from netket.vqs import MCState
-from netket.vqs.mc.mc_state.state import jit_evaluate
 
 
 @partial(jax.vmap, in_axes=(None, None, None, 0), out_axes=0)
 def local_value_kernel(
     H: AbstractOperator, logpsi: Callable, pars: PyTree, σ: Array
 ) -> Array:
+    disorder = H.get_disorder()
     σp, mels = H.get_conn_padded(σ)
-    return jnp.sum(mels * jnp.exp(logpsi(pars, σp) - logpsi(pars, σ)))
+    return jnp.sum(
+        mels * jnp.exp(logpsi(pars, σp, disorder) - logpsi(pars, σ, disorder))
+    )
 
 
-class MCStateSimple(MCState):
-    def init(self, seed=None, dtype=None):
-        if self._init_fun is None:
-            raise RuntimeError(
-                "Cannot initialise the parameters of this state"
-                "because you did not supply a valid init_function."
-            )
-
-        if dtype is None:
-            dtype = self.sampler.dtype
-
-        key = nkjax.PRNGKey(seed)
-
-        dummy_input = jnp.zeros((1, self.hilbert.size), dtype=dtype)
-
-        variables = jit_evaluate(
-            self._init_fun, {"params": key}, dummy_input, dummy_input
-        )
-        self.variables = variables
-
+class MCStateSimpleDisorder(MCState):
     def expect(self, H: AbstractOperator) -> Stats:
         return _expect(
             H,
