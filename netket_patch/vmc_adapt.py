@@ -20,11 +20,11 @@ def log_lr_callback(step, log_data, driver):
 
 
 class VMCAdapt(nk.VMC):
-    def update_parameters(self):
+    def update_parameters(self, dp):
         self._optimizer_state, self.state.parameters = apply_gradient(
             self._optimizer.update,
             self._optimizer_state,
-            self._updates,
+            dp,
             self.state.parameters,
             self._loss_stats.mean,
         )
