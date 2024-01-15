@@ -17,4 +17,4 @@ class VMCDisorder(nk.VMC):
         self.key_ham, key = random.split(self.key_ham)
         self._ham.sample_disorder(key)
 
-        super()._forward_and_backward()
+        return super()._forward_and_backward()

@@ -65,14 +65,14 @@ class VMCTry(nk.VMC):
                 )
 
                 for buffer_idx in range(self.try_steps):
-                    self._forward_and_backward()
+                    dp = self._forward_and_backward()
                     if self._step_count % step_size == 0:
                         yield self._step_count
 
                     self._losses[self._stage][buffer_idx] = self._loss_stats.mean.real
 
                     self._step_count += 1
-                    self.update_parameters()
+                    self.update_parameters(dp)
 
                 self._trial_variables[self._stage] = self.state.variables
                 self._trial_optimizer_states[self._stage] = self._optimizer_state
@@ -90,12 +90,12 @@ class VMCTry(nk.VMC):
                 self._optimizer_state = self._trial_optimizer_states[idx]
 
                 for _ in range(self.run_steps):
-                    self._forward_and_backward()
+                    dp = self._forward_and_backward()
                     if self._step_count % step_size == 0:
                         yield self._step_count
 
                     self._step_count += 1
-                    self.update_parameters()
+                    self.update_parameters(dp)
 
                 self._last_variables = self.state.variables
                 self._last_optimizer_state = self._optimizer_state

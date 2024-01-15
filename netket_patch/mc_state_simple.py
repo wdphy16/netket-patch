@@ -39,9 +39,7 @@ class MCStateSimple(MCState):
 
         dummy_input = jnp.zeros((1, self.hilbert.size), dtype=dtype)
 
-        variables = jit_evaluate(
-            self._init_fun, {"params": key}, dummy_input, dummy_input
-        )
+        variables = jit_evaluate(self._init_fun, {"params": key}, dummy_input)
         self.variables = variables
 
     def expect(self, H: AbstractOperator) -> Stats:

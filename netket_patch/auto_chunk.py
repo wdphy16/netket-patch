@@ -23,7 +23,7 @@ def AutoChunk(Driver):
         def _forward_and_backward(self):
             while True:
                 try:
-                    super()._forward_and_backward()
+                    return super()._forward_and_backward()
                 except RuntimeError as e:
                     gc.collect()
                     chunk_size = self.state.chunk_size // 2
