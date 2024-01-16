@@ -1,5 +1,5 @@
 from .auto_chunk import AutoChunk
-from .callbacks import check_finite_callback
+from .callbacks import build_check_finite_snapshot_callback, check_finite_callback
 from .full_sum_state_simple import FullSumStateSimple
 from .ising_disorder_jax import IsingDisorderJax
 from .json_log_ema import JsonLogEMA, log_ema_callback
