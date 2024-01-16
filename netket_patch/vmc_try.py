@@ -79,7 +79,8 @@ class VMCTry(nk.VMC):
                 self._stage += 1
 
             elif self._stage == self.n_trials:
-                idx = np.argmin([get_slope_t_stat(x) for x in self._losses])
+                slopes = [get_slope_t_stat(x) for x in self._losses]
+                idx = np.argmin(slopes)
 
                 self.state.variables = self._trial_variables[idx]
 
@@ -89,7 +90,7 @@ class VMCTry(nk.VMC):
                 )
                 self._optimizer_state = self._trial_optimizer_states[idx]
 
-                print("lr", lr)
+                print("lr", lr, "slope", slopes[idx])
 
                 for _ in range(self.run_steps):
                     dp = self._forward_and_backward()

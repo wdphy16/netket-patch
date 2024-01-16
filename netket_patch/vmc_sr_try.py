@@ -123,7 +123,8 @@ class VMCSRTry(nk.VMC):
                 self._stage += 1
 
             elif self._stage == self.n_trials * 2 - 1:
-                idx = np.argmin([get_slope_t_stat(x) for x in self._losses])
+                slopes = [get_slope_t_stat(x) for x in self._losses]
+                idx = np.argmin(slopes)
 
                 self.state.variables = self._trial_variables[idx]
                 self._optimizer_state = self._trial_optimizer_states[idx]
@@ -139,6 +140,8 @@ class VMCSRTry(nk.VMC):
                     find_state(self._optimizer_state, AdjustableLRState).lr,
                     "diag_shift",
                     self.diag_shift,
+                    "slope",
+                    slopes[idx],
                 )
 
                 for _ in range(self.run_steps):
