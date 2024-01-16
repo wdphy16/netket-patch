@@ -10,4 +10,5 @@ from .preconditioner_adapt import LinearPreconditionerAdapt
 from .vmc_adapt import VMCAdapt, apply_gradient, log_lr_callback
 from .vmc_disorder import VMCDisorder
 from .vmc_sr_try import VMCSRTry, log_diag_shift_callback
+from .vmc_srt_try import VMCSRtTry
 from .vmc_try import VMCTry
