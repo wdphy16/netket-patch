@@ -87,7 +87,8 @@ class VMCTry(nk.VMC):
         )
         self._optimizer_state = self._trial_optimizer_states[idx]
 
-        print("lr", lr, "slope", slopes[idx])
+        slope = slopes[idx]
+        print(f"lr {lr:.3g} slope {slope:.3g}")
 
         for _ in range(self.run_steps):
             dp = self._forward_and_backward()

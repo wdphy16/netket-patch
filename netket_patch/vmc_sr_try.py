@@ -80,14 +80,9 @@ class VMCSRTry(nk.VMC):
             self.lr_max / self.lr_growth,
         )
 
-        print(
-            "lr",
-            find_state(self._optimizer_state, AdjustableLRState).lr,
-            "diag_shift",
-            self.diag_shift,
-            "slope",
-            slopes[idx],
-        )
+        lr = find_state(self._optimizer_state, AdjustableLRState).lr
+        slope = slopes[idx]
+        print(f"lr {lr:.3g} diag_shift {self.diag_shift:.3g} slope {slope:.3g}")
 
         for _ in range(self.run_steps):
             dp = self._forward_and_backward()
