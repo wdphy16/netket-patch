@@ -89,6 +89,8 @@ class VMCTry(nk.VMC):
                 )
                 self._optimizer_state = self._trial_optimizer_states[idx]
 
+                print("lr", lr)
+
                 for _ in range(self.run_steps):
                     dp = self._forward_and_backward()
                     if self._step_count % step_size == 0:

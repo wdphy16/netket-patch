@@ -55,6 +55,8 @@ class VMCSRTry(nk.VMC):
         self._trial_variables = [None for _ in range(self.n_trials)]
         self._trial_optimizer_states = [None for _ in range(self.n_trials)]
 
+        self.state.diag_shift = self.diag_shift
+
     def iter(self, n_steps, step_size=1):  # noqa: A003
         epoch_steps = (self.n_trials * 2 - 1) * self.try_steps + self.run_steps
         assert n_steps % epoch_steps == 0
@@ -130,6 +132,13 @@ class VMCSRTry(nk.VMC):
                 self._last_diag_shift = min(
                     max(self.diag_shift, self.lr_min / self.lr_decay),
                     self.lr_max / self.lr_grow,
+                )
+
+                print(
+                    "lr",
+                    find_state(self._optimizer_state, AdjustableLRState).lr,
+                    "diag_shift",
+                    self.diag_shift,
                 )
 
                 for _ in range(self.run_steps):

@@ -6,6 +6,7 @@ from .json_log_ema import JsonLogEMA, log_ema_callback
 from .mc_state_min_sr import MCStateMinSR
 from .mc_state_simple import MCStateSimple
 from .mc_state_simple_disorder import MCStateSimpleDisorder
+from .preconditioner_adapt import LinearPreconditionerAdapt
 from .vmc_adapt import VMCAdapt, apply_gradient, log_lr_callback
 from .vmc_disorder import VMCDisorder
 from .vmc_sr_try import VMCSRTry, log_diag_shift_callback
